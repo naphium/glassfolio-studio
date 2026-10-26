@@ -23,7 +23,7 @@ export type FullSite = SiteData & {
   theme: SiteData["theme"] & { preset: string };
 };
 
-export const DEFAULT_EFFECTS: Effects = { cursorGlow: true, tilt: true, overlay: "none", noise: true, typewriter: true, clickSparks: true };
+export const DEFAULT_EFFECTS: Effects = { cursorGlow: false, tilt: false, overlay: "none", noise: false, typewriter: true, clickSparks: false };
 export const DEFAULT_INTEGRATIONS: Integrations = { discordId: "", githubUser: "", syncStatusFromDiscord: true, showDiscord: true, showGithub: true, showSpotify: true };
 
 export function normalize(s: SiteData): FullSite {

@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { BadgeCheck, Clock, MapPin, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { normalize, discordAvatar } from "@/lib/extras";
-import { CursorGlow, ClickSparks, Overlay, Noise } from "@/components/site/Effects";
+import { Overlay } from "@/components/site/Effects";
 import { DiscordWidget, GithubWidget, Typewriter, lanyardQuery } from "@/components/site/Widgets";
 import { supabase } from "@/integrations/supabase/client";
 import { settingsQuery, tableQuery, type SectionKey, type Status } from "@/lib/site";
@@ -65,9 +65,6 @@ function Index() {
 
   const s = settings.data ? normalize(settings.data) : null;
   const lanyard = useQuery({ ...lanyardQuery(s?.integrations.discordId ?? ""), enabled: !!s?.integrations.discordId });
-  const mx = useMotionValue(0), my = useMotionValue(0);
-  const rx = useSpring(useTransform(my, [-0.5, 0.5], [5, -5]), { stiffness: 120, damping: 20 });
-  const ry = useSpring(useTransform(mx, [-0.5, 0.5], [-5, 5]), { stiffness: 120, damping: 20 });
 
   const enabledKeys = s?.sections.filter((x) => x.enabled).map((x) => x.key).join(",") ?? "";
   useEffect(() => {
@@ -122,14 +119,8 @@ function Index() {
   return (
     <div style={themeStyle(s.theme)} className="min-h-screen px-4 pb-32 pt-10 font-sans">
       <Background theme={s.theme} />
-      {fx.cursorGlow && <CursorGlow />}
-      {fx.clickSparks && <ClickSparks />}
       <Overlay kind={fx.overlay} />
-      {fx.noise && <Noise />}
       <motion.main initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-        style={fx.tilt ? { rotateX: rx, rotateY: ry, transformPerspective: 1200 } : {}}
-        onPointerMove={(e) => { if (!fx.tilt) return; const r = e.currentTarget.getBoundingClientRect(); mx.set((e.clientX - r.left) / r.width - 0.5); my.set((e.clientY - r.top) / r.height - 0.5); }}
-        onPointerLeave={() => { mx.set(0); my.set(0); }}
         className={`glass mx-auto max-w-3xl overflow-hidden rounded-3xl ${s.theme.glow ? "glass-glow" : ""}`}>
         <div className="h-36 bg-sky sm:h-44">
           {p.banner && <img src={p.banner} alt="" className="h-full w-full object-cover" />}
