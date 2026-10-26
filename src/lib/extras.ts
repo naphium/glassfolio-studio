@@ -28,8 +28,10 @@ export const DEFAULT_INTEGRATIONS: Integrations = { discordId: "", githubUser: "
 
 export function normalize(s: SiteData): FullSite {
   const any = s as any;
+  const sections = s.sections.some((x) => x.key === "live") ? s.sections : [{ key: "live" as const, label: "Live", enabled: true }, ...s.sections];
   return {
     ...s,
+    sections,
     theme: { preset: "midnight", ...s.theme },
     effects: { ...DEFAULT_EFFECTS, ...(any.effects ?? {}) },
     integrations: { ...DEFAULT_INTEGRATIONS, ...(any.integrations ?? {}) },
