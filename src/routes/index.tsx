@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { BadgeCheck, Clock, MapPin, Share2 } from "lucide-react";
 import { toast } from "sonner";
-import { normalize } from "@/lib/extras";
+import { normalize, discordAvatar } from "@/lib/extras";
 import { CursorGlow, ClickSparks, Overlay, Noise } from "@/components/site/Effects";
 import { DiscordWidget, GithubWidget, Typewriter, lanyardQuery } from "@/components/site/Widgets";
 import { supabase } from "@/integrations/supabase/client";
@@ -138,7 +138,7 @@ function Index() {
           <div className="-mt-14 flex flex-wrap items-end justify-between gap-4">
             <div className="relative">
               <div className="h-28 w-28 overflow-hidden rounded-full border-4 border-background bg-muted">
-                {p.avatar ? <img src={p.avatar} alt={p.name} className="h-full w-full object-cover" /> :
+                {(p.avatar || ly) ? <img src={p.avatar || discordAvatar(ly!.discord_user)} alt={p.name} className="h-full w-full object-cover" /> :
                   <div className="grid h-full w-full place-items-center font-display text-4xl text-primary">{p.name[0]}</div>}
               </div>
               <span className={`absolute bottom-2 right-2 h-5 w-5 rounded-full border-4 border-background ${st.cls}`} />

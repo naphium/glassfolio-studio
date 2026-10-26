@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, ExternalLink, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { settingsQuery, tableQuery, type SiteData } from "@/lib/site";
+import { settingsQuery, tableQuery } from "@/lib/site";
+import { normalize, PRESETS, fetchLanyard, fetchGithub, type FullSite } from "@/lib/extras";
 import { CrudManager, UploadButton, type Field } from "@/components/admin/CrudManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,7 +68,7 @@ function Admin() {
         </header>
         <Tabs defaultValue="profile" className="glass rounded-3xl p-4 sm:p-6">
           <TabsList className="flex h-auto flex-wrap justify-start bg-secondary">
-            {["profile", "theme", "sections", "cards", "links", "projects", "gallery", "music", "timeline", "guestbook", "analytics"].map((t) => (
+            {["profile", "theme", "effects", "integrations", "sections", "cards", "links", "projects", "gallery", "music", "timeline", "guestbook", "analytics"].map((t) => (
               <TabsTrigger key={t} value={t} className="capitalize">{t}</TabsTrigger>
             ))}
           </TabsList>
@@ -101,16 +102,44 @@ function L({ label, children }: { label: string; children: React.ReactNode }) {
 function SettingsTabs() {
   const qc = useQueryClient();
   const { data } = useQuery(settingsQuery);
-  const [s, setS] = useState<SiteData | null>(null);
-  useEffect(() => { if (data) setS(data); }, [data]);
+  const [s, setS] = useState<FullSite | null>(null);
+  useEffect(() => { if (data) setS(normalize(data)); }, [data]);
   if (!s) return null;
   const save = async () => {
     const { error } = await supabase.from("site_settings").update({ data: s as any, updated_at: new Date().toISOString() }).eq("id", 1);
     if (error) { toast.error(error.message); return; }
     toast.success("Site updated"); qc.invalidateQueries({ queryKey: ["site_settings"] });
   };
-  const P = (k: keyof SiteData["profile"], v: any) => setS({ ...s, profile: { ...s.profile, [k]: v } });
-  const T = (k: keyof SiteData["theme"], v: any) => setS({ ...s, theme: { ...s.theme, [k]: v } });
+  const P = (k: keyof FullSite["profile"], v: any) => setS({ ...s, profile: { ...s.profile, [k]: v } });
+  const T = (k: keyof FullSite["theme"], v: any) => setS({ ...s, theme: { ...s.theme, [k]: v } });
+  const E = (k: keyof FullSite["effects"], v: any) => setS({ ...s, effects: { ...s.effects, [k]: v } });
+  const I = (k: keyof FullSite["integrations"], v: any) => setS({ ...s, integrations: { ...s.integrations, [k]: v } });
+  const PL = (k: keyof FullSite["player"], v: any) => setS({ ...s, player: { ...s.player, [k]: v } });
+  const applyPreset = (key: string) => {
+    const pr = PRESETS[key]!;
+    setS({ ...s, theme: { ...s.theme, ...pr.theme, preset: key }, effects: { ...s.effects, overlay: pr.overlay ?? "none" } });
+  };
+  const testDiscord = async () => { try { const d = await fetchLanyard(s.integrations.discordId); toast.success(`Found ${d.discord_user.username} (${d.discord_status})`); } catch (e: any) { toast.error(e.message + " — join discord.gg/lanyard with this account first."); } };
+  const importGithub = async () => {
+    try {
+      const g = await fetchGithub(s.integrations.githubUser);
+      setS({ ...s, profile: { ...s.profile, name: s.profile.name || g.profile.name || g.profile.login, bio: g.profile.bio || s.profile.bio, avatar: s.profile.avatar || g.profile.avatar_url, location: g.profile.location || s.profile.location } });
+      toast.success("Pulled profile info from GitHub — review and save.");
+    } catch (e: any) { toast.error(e.message); }
+  };
+  const importRepos = async () => {
+    try {
+      const g = await fetchGithub(s.integrations.githubUser);
+      const rows = g.top.map((r: any, i: number) => ({ title: r.name, description: r.description ?? "", tags: [r.language, ...(r.topics ?? [])].filter(Boolean).slice(0, 5), live_url: r.homepage || null, repo_url: r.html_url, sort: 100 + i }));
+      const { error } = await supabase.from("projects").insert(rows);
+      if (error) { toast.error(error.message); return; }
+      qc.invalidateQueries({ queryKey: ["table", "projects"] });
+      toast.success(`Imported ${rows.length} repos as projects`);
+    } catch (e: any) { toast.error(e.message); }
+  };
+  const Toggle = ({ label, on, set }: { label: string; on: boolean; set: (v: boolean) => void }) => (
+    <label className="tile flex items-center justify-between gap-2 p-3 text-sm">{label}<Switch checked={on} onCheckedChange={set} /></label>
+  );
   const moveSec = (i: number, d: number) => {
     const arr = [...s.sections]; const j = i + d; if (j < 0 || j >= arr.length) return;
     [arr[i], arr[j]] = [arr[j]!, arr[i]!]; setS({ ...s, sections: arr });
@@ -142,10 +171,18 @@ function SettingsTabs() {
       </TabsContent>
 
       <TabsContent value="theme">
+        <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {Object.entries(PRESETS).map(([k, pr]) => (
+            <button key={k} onClick={() => applyPreset(k)} className={`tile p-3 text-left text-sm ${s.theme.preset === k ? "border-primary" : ""}`}>
+              <span className="mb-2 block h-6 rounded-md" style={{ background: `linear-gradient(120deg, ${pr.theme.accent}, transparent)` }} />
+              {pr.label}
+            </button>
+          ))}
+        </div>
         <div className="grid gap-5 md:grid-cols-2">
           <L label="Background">
             <select className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-foreground" value={s.theme.background} onChange={(e) => T("background", e.target.value)}>
-              {["particles", "gradient", "image", "video"].map((x) => <option key={x} value={x} className="bg-popover">{x}</option>)}
+              {["particles", "aurora", "matrix", "gradient", "image", "video"].map((x) => <option key={x} value={x} className="bg-popover">{x}</option>)}
             </select>
           </L>
           <L label="Accent color"><Input type="color" value={s.theme.accent} onChange={(e) => T("accent", e.target.value)} className="h-9 p-1" /></L>
@@ -159,7 +196,53 @@ function SettingsTabs() {
           <label className="flex items-center gap-2 text-sm"><Switch checked={s.theme.glow} onCheckedChange={(v) => T("glow", v)} /> Glowing borders</label>
           <L label={`Glass transparency: ${Math.round(s.theme.glass * 100)}%`}><Slider value={[s.theme.glass]} min={0} max={0.4} step={0.01} onValueChange={([v]) => T("glass", v ?? 0)} /></L>
           <L label={`Blur: ${s.theme.blur}px`}><Slider value={[s.theme.blur]} min={0} max={60} step={1} onValueChange={([v]) => T("blur", v ?? 0)} /></L>
-          <label className="flex items-center gap-2 text-sm"><Switch checked={s.player.enabled} onCheckedChange={(v) => setS({ ...s, player: { enabled: v } })} /> Show music player</label>
+        </div>
+        {saveBtn}
+      </TabsContent>
+
+      <TabsContent value="effects">
+        <div className="grid gap-3 md:grid-cols-2">
+          <Toggle label="Cursor glow" on={s.effects.cursorGlow} set={(v) => E("cursorGlow", v)} />
+          <Toggle label="3D card tilt" on={s.effects.tilt} set={(v) => E("tilt", v)} />
+          <Toggle label="Film grain" on={s.effects.noise} set={(v) => E("noise", v)} />
+          <Toggle label="Typewriter roles" on={s.effects.typewriter} set={(v) => E("typewriter", v)} />
+          <Toggle label="Click sparks" on={s.effects.clickSparks} set={(v) => E("clickSparks", v)} />
+          <L label="Weather / overlay">
+            <select className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-foreground" value={s.effects.overlay} onChange={(e) => E("overlay", e.target.value)}>
+              {["none", "snow", "rain", "fireflies", "sakura"].map((x) => <option key={x} value={x} className="bg-popover">{x}</option>)}
+            </select>
+          </L>
+        </div>
+        <h3 className="mb-3 mt-8 font-display text-lg font-semibold">Music player</h3>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Toggle label="Show music player" on={s.player.enabled} set={(v) => PL("enabled", v)} />
+          <Toggle label="Auto-play music" on={s.player.autoplay} set={(v) => PL("autoplay", v)} />
+          <Toggle label="Shuffle" on={s.player.shuffle} set={(v) => PL("shuffle", v)} />
+          <L label={`Starting volume: ${Math.round(s.player.volume * 100)}%`}><Slider value={[s.player.volume]} max={1} step={0.05} onValueChange={([v]) => PL("volume", v ?? 0.5)} /></L>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">Browsers block sound until a visitor clicks or presses a key, so auto-play starts on their first interaction.</p>
+        {saveBtn}
+      </TabsContent>
+
+      <TabsContent value="integrations">
+        <div className="space-y-6">
+          <div className="tile space-y-3 p-4">
+            <h3 className="font-semibold">Discord (live presence, games, Spotify)</h3>
+            <p className="text-xs text-muted-foreground">Enter your Discord user ID (Settings → Advanced → Developer Mode, then right-click yourself → Copy User ID). Your account must join the free Lanyard server at discord.gg/lanyard for live data.</p>
+            <div className="flex gap-2"><Input placeholder="e.g. 94490510688792576" value={s.integrations.discordId} onChange={(e) => I("discordId", e.target.value.trim())} /><Button variant="secondary" onClick={testDiscord}>Test</Button></div>
+            <div className="grid gap-2 md:grid-cols-3">
+              <Toggle label="Show Discord card" on={s.integrations.showDiscord} set={(v) => I("showDiscord", v)} />
+              <Toggle label="Show Spotify" on={s.integrations.showSpotify} set={(v) => I("showSpotify", v)} />
+              <Toggle label="Auto status from Discord" on={s.integrations.syncStatusFromDiscord} set={(v) => I("syncStatusFromDiscord", v)} />
+            </div>
+          </div>
+          <div className="tile space-y-3 p-4">
+            <h3 className="font-semibold">GitHub</h3>
+            <div className="flex flex-wrap gap-2"><Input className="max-w-xs" placeholder="username" value={s.integrations.githubUser} onChange={(e) => I("githubUser", e.target.value.trim())} />
+              <Button variant="secondary" onClick={importGithub}>Pull profile info</Button>
+              <Button variant="secondary" onClick={importRepos}>Import top repos as projects</Button></div>
+            <Toggle label="Show GitHub stats card" on={s.integrations.showGithub} set={(v) => I("showGithub", v)} />
+          </div>
         </div>
         {saveBtn}
       </TabsContent>
