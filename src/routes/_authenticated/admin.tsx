@@ -94,6 +94,10 @@ function Admin() {
   );
 }
 
+function L({ label, children }: { label: string; children: React.ReactNode }) {
+  return <label className="block space-y-1 text-xs text-muted-foreground">{label}{children}</label>;
+}
+
 function SettingsTabs() {
   const qc = useQueryClient();
   const { data } = useQuery(settingsQuery);
@@ -107,9 +111,6 @@ function SettingsTabs() {
   };
   const P = (k: keyof SiteData["profile"], v: any) => setS({ ...s, profile: { ...s.profile, [k]: v } });
   const T = (k: keyof SiteData["theme"], v: any) => setS({ ...s, theme: { ...s.theme, [k]: v } });
-  const L = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <label className="block space-y-1 text-xs text-muted-foreground">{label}{children}</label>
-  );
   const moveSec = (i: number, d: number) => {
     const arr = [...s.sections]; const j = i + d; if (j < 0 || j >= arr.length) return;
     [arr[i], arr[j]] = [arr[j], arr[i]]; setS({ ...s, sections: arr });
