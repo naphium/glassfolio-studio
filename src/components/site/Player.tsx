@@ -6,24 +6,34 @@ type Track = { id: string; title: string; artist: string; audio_url: string; cov
 
 const fmt = (s: number) => (isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}` : "0:00");
 
-export function Player({ tracks }: { tracks: Track[] }) {
+export function Player({ tracks, autoplay = false, initialVolume = 0.6, shuffle = false }: { tracks: Track[]; autoplay?: boolean; initialVolume?: number; shuffle?: boolean }) {
   const audio = useRef<HTMLAudioElement>(null);
   const [i, setI] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [t, setT] = useState(0);
   const [d, setD] = useState(0);
-  const [vol, setVol] = useState(0.6);
+  const [vol, setVol] = useState(initialVolume);
+  const [hint, setHint] = useState(false);
   const track = tracks[i];
 
   useEffect(() => { if (audio.current) audio.current.volume = vol; }, [vol]);
   useEffect(() => { if (playing) audio.current?.play().catch(() => setPlaying(false)); }, [i]);
+  // Autoplay: try right away; browsers usually block sound until the visitor interacts, so retry on first click/key.
+  useEffect(() => {
+    if (!autoplay || !tracks.length) return;
+    const start = () => audio.current?.play().then(() => { setPlaying(true); setHint(false); cleanup(); }).catch(() => setHint(true));
+    const cleanup = () => { removeEventListener("pointerdown", start); removeEventListener("keydown", start); };
+    const t = setTimeout(start, 300);
+    addEventListener("pointerdown", start); addEventListener("keydown", start);
+    return () => { clearTimeout(t); cleanup(); };
+  }, [autoplay, tracks.length]);
 
   if (!track) return null;
   const toggle = () => {
     const a = audio.current!;
     if (a.paused) { a.play(); setPlaying(true); } else { a.pause(); setPlaying(false); }
   };
-  const go = (n: number) => setI((i + n + tracks.length) % tracks.length);
+  const go = (n: number) => setI(shuffle && tracks.length > 1 ? (i + 1 + Math.floor(Math.random() * (tracks.length - 1))) % tracks.length : (i + n + tracks.length) % tracks.length);
 
   return (
     <div className="fixed inset-x-0 bottom-3 z-40 mx-auto w-[min(640px,calc(100%-1.5rem))]">
@@ -35,7 +45,7 @@ export function Player({ tracks }: { tracks: Track[] }) {
             <Music className="m-3 h-5 w-5 text-primary" />}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium">{track.title}</div>
+          <div className="truncate text-sm font-medium">{track.title}{track.artist && <span className="text-muted-foreground"> · {track.artist}</span>}{hint && !playing && <span className="ml-2 text-xs text-primary">tap anywhere for sound</span>}</div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{fmt(t)}</span>
             <Slider value={[t]} max={d || 1} step={0.1} className="flex-1"
