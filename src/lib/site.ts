@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type SectionKey = "about" | "links" | "projects" | "gallery" | "timeline" | "guestbook";
+export type SectionKey = "live" | "about" | "links" | "projects" | "gallery" | "timeline" | "guestbook";
 export type Status = "online" | "coding" | "gaming" | "away" | "custom";
 
 export interface SiteData {
@@ -20,7 +20,7 @@ export interface SiteData {
     quotes: string[];
   };
   theme: {
-    background: "particles" | "image" | "video" | "gradient";
+    background: "particles" | "image" | "video" | "gradient" | "aurora" | "matrix";
     bgImage: string;
     bgVideo: string;
     accent: string;
