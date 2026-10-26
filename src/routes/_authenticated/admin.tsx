@@ -113,7 +113,7 @@ function SettingsTabs() {
   const T = (k: keyof SiteData["theme"], v: any) => setS({ ...s, theme: { ...s.theme, [k]: v } });
   const moveSec = (i: number, d: number) => {
     const arr = [...s.sections]; const j = i + d; if (j < 0 || j >= arr.length) return;
-    [arr[i], arr[j]] = [arr[j], arr[i]]; setS({ ...s, sections: arr });
+    [arr[i], arr[j]] = [arr[j]!, arr[i]!]; setS({ ...s, sections: arr });
   };
   const saveBtn = <Button className="mt-6" onClick={save}>Save changes</Button>;
 
@@ -157,8 +157,8 @@ function SettingsTabs() {
             </select>
           </L>
           <label className="flex items-center gap-2 text-sm"><Switch checked={s.theme.glow} onCheckedChange={(v) => T("glow", v)} /> Glowing borders</label>
-          <L label={`Glass transparency: ${Math.round(s.theme.glass * 100)}%`}><Slider value={[s.theme.glass]} min={0} max={0.4} step={0.01} onValueChange={([v]) => T("glass", v)} /></L>
-          <L label={`Blur: ${s.theme.blur}px`}><Slider value={[s.theme.blur]} min={0} max={60} step={1} onValueChange={([v]) => T("blur", v)} /></L>
+          <L label={`Glass transparency: ${Math.round(s.theme.glass * 100)}%`}><Slider value={[s.theme.glass]} min={0} max={0.4} step={0.01} onValueChange={([v]) => T("glass", v ?? 0)} /></L>
+          <L label={`Blur: ${s.theme.blur}px`}><Slider value={[s.theme.blur]} min={0} max={60} step={1} onValueChange={([v]) => T("blur", v ?? 0)} /></L>
           <label className="flex items-center gap-2 text-sm"><Switch checked={s.player.enabled} onCheckedChange={(v) => setS({ ...s, player: { enabled: v } })} /> Show music player</label>
         </div>
         {saveBtn}
