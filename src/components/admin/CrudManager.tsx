@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { DynIcon } from "@/components/site/DynIcon";
 
 export type Field = { key: string; label: string; type: "text" | "textarea" | "url" | "image" | "audio" | "tags" | "icon" };
-type Row = Record<string, any>;
+type Row = any;
 
 export function UploadButton({ accept, onDone }: { accept: string; onDone: (url: string) => void }) {
   const [busy, setBusy] = useState(false);
@@ -60,24 +60,24 @@ export function CrudManager({ table, fields, defaults }: { table: ContentTable; 
 
   const add = async () => {
     const { error } = await db.insert({ ...defaults, sort: rows.length });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     refresh();
   };
   const save = async (r: Row, patch?: Row) => {
     const { id, created_at, ...rest } = { ...r, ...patch };
     const { error } = await db.update(rest).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Saved"); refresh();
   };
   const del = async (id: string) => {
     if (!confirm("Delete this item?")) return;
     const { error } = await db.delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     refresh();
   };
   const move = async (i: number, dir: number) => {
     const j = i + dir; if (j < 0 || j >= rows.length) return;
-    const a = rows[i], b = rows[j];
+    const a = rows[i]!, b = rows[j]!;
     await Promise.all([db.update({ sort: j }).eq("id", a.id), db.update({ sort: i }).eq("id", b.id)]);
     refresh();
   };

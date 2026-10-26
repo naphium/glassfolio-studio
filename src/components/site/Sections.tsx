@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
-type Row = Record<string, any>;
+type Row = any;
 
 export function About({ profile, cards }: { profile: SiteData["profile"]; cards: Row[] }) {
   const [q, setQ] = useState(0);
@@ -146,7 +146,7 @@ export function Guestbook({ entries }: { entries: Row[] }) {
     setBusy(true);
     const { error } = await supabase.from("guestbook").insert({ name: name.trim().slice(0, 60), message: msg.trim().slice(0, 500) });
     setBusy(false);
-    if (error) return toast.error("Couldn't sign the guestbook");
+    if (error) { toast.error("Couldn't sign the guestbook"); return; }
     setName(""); setMsg("");
     toast.success("Thanks! Your message will appear after approval.");
   };

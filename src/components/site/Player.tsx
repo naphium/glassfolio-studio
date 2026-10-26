@@ -39,7 +39,7 @@ export function Player({ tracks }: { tracks: Track[] }) {
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{fmt(t)}</span>
             <Slider value={[t]} max={d || 1} step={0.1} className="flex-1"
-              onValueChange={([v]) => { if (audio.current) audio.current.currentTime = v; }} />
+              onValueChange={([v]) => { if (audio.current && v !== undefined) audio.current.currentTime = v; }} />
             <span>{fmt(d)}</span>
           </div>
         </div>
@@ -50,7 +50,7 @@ export function Player({ tracks }: { tracks: Track[] }) {
         <button aria-label="Next" onClick={() => go(1)} className="text-muted-foreground hover:text-foreground"><SkipForward className="h-4 w-4" /></button>
         <div className="hidden w-20 items-center gap-1 sm:flex">
           <Volume2 className="h-4 w-4 text-muted-foreground" />
-          <Slider value={[vol]} max={1} step={0.01} onValueChange={([v]) => setVol(v)} />
+          <Slider value={[vol]} max={1} step={0.01} onValueChange={([v]) => setVol(v ?? 0)} />
         </div>
       </div>
     </div>

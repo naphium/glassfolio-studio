@@ -60,7 +60,7 @@ export const tableQuery = (table: ContentTable | "guestbook") =>
       const { data, error } =
         table === "guestbook" ? await q.order("created_at", { ascending: false }) : await q.order("sort");
       if (error) throw error;
-      return data as Record<string, any>[];
+      return data as any[];
     },
   });
 

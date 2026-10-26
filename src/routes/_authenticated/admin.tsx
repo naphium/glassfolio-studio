@@ -106,7 +106,7 @@ function SettingsTabs() {
   if (!s) return null;
   const save = async () => {
     const { error } = await supabase.from("site_settings").update({ data: s as any, updated_at: new Date().toISOString() }).eq("id", 1);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Site updated"); qc.invalidateQueries({ queryKey: ["site_settings"] });
   };
   const P = (k: keyof SiteData["profile"], v: any) => setS({ ...s, profile: { ...s.profile, [k]: v } });
