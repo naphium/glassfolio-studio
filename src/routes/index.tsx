@@ -127,7 +127,7 @@ function Index() {
       <Overlay kind={fx.overlay} />
       {fx.noise && <Noise />}
       <motion.main initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-        style={fx.tilt ? { rotateX: rx, rotateY: ry, transformPerspective: 1200 } : undefined}
+        style={fx.tilt ? { rotateX: rx, rotateY: ry, transformPerspective: 1200 } : {}}
         onPointerMove={(e) => { if (!fx.tilt) return; const r = e.currentTarget.getBoundingClientRect(); mx.set((e.clientX - r.left) / r.width - 0.5); my.set((e.clientY - r.top) / r.height - 0.5); }}
         onPointerLeave={() => { mx.set(0); my.set(0); }}
         className={`glass mx-auto max-w-3xl overflow-hidden rounded-3xl ${s.theme.glow ? "glass-glow" : ""}`}>
